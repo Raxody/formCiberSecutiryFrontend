@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Formulario con Bootstrap y SweetAlert</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form id="myForm" class="needs-validation" novalidate>
+                <center><h2>Crear usuario</h2></center>
+                <br>
+                    <div class="form-group">
+                        <label for="id">ID:</label>
+                        <input type="number" class="form-control" id="id" name="id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Nombre:</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="submitForm()">Enviar</button>
+                </form>
+            </div>
+        </div>
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <center><h2>Lista de Usuarios</h2></center>
+                <br>
+                <table class="table">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userList"></tbody> <!-- Tabla de usuarios -->
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Función para obtener la lista de usuarios y mostrarla en la interfaz
+        function displayUserList() {
+            fetch("http://34.66.78.75:9393/course/getAll")
+            .then(response => response.json())
+            .then(data => {
+                const userListElement = document.getElementById('userList');
+                userListElement.innerHTML = ''; // Limpiar la lista de usuarios
+                data.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                    `;
+                    userListElement.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Hubo un problema al obtener la lista de usuarios:', error);
+            });
+        }
+
+        // Llamar a la función para mostrar la lista de usuarios al cargar la página
+        window.addEventListener('load', displayUserList);
+
+        // Función para enviar el formulario
+        function submitForm() {
+            const form = document.getElementById("myForm");
+            const formData = new FormData(form);
+
+            fetch("http://34.66.78.75:9393/course/save", {
+                method: "POST",
+                body: JSON.stringify(Object.fromEntries(formData.entries())),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+            .then((response) => {
+                return response.json().then((data) => ({
+                    status: response.status,
+                    data: data,
+                }));
+            })
+            .then((res) => {
+                if (res.status >= 400 && res.status <= 500 ) {
+                    console.error(res.data);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error ",
+                        text: res.data.error,
+                        confirmButtonText: "Aceptar",
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "success",
+                        title: "¡Bienvenido!",
+                        text: "Estudiante con identificacion: " + res.data.id + " registrado con exito",
+                        confirmButtonText: "Aceptar",
+                    });
+                    displayUserList(); 
+                    form.reset(); 
+                }
+            })
+            .catch((error) => {
+                console.error("Hubo un problema con la solicitud fetch:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Error ",
+                    text: "Contactar con soporte.",
+                    confirmButtonText: "Aceptar",
+                });
+            });
+        }
+    </script>
+</body>
+</html>
